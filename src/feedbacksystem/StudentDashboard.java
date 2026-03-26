@@ -54,7 +54,7 @@ public class StudentDashboard extends JFrame {
             JOptionPane.showMessageDialog(this,
                     "Logged out successfully!");
 
-            new LoginPage().setVisible(true);
+            new DashboardPage().setVisible(true);
             dispose();
 
         } catch (Exception e) {

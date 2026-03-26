@@ -34,7 +34,7 @@ public class FeedbackListView extends JPanel {
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
-        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(255, 255, 255, 50)));
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
 
         add(scrollPane, BorderLayout.CENTER);
     }
@@ -44,12 +44,14 @@ public class FeedbackListView extends JPanel {
         table.setOpaque(false);
         ((DefaultTableCellRenderer)table.getDefaultRenderer(Object.class)).setOpaque(false);
         
-        table.setBackground(new Color(255, 255, 255, 20));
+        table.setBackground(new Color(255, 255, 255, 0)); // Fully transparent
         table.setForeground(Color.WHITE);
         table.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        
         table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 16));
-        table.getTableHeader().setBackground(new Color(0, 120, 255));
-        table.getTableHeader().setForeground(Color.WHITE);
+        table.getTableHeader().setOpaque(false);
+        table.getTableHeader().setBackground(new Color(15, 25, 45, 120));
+        table.getTableHeader().setForeground(new Color(180, 200, 255));
         table.setSelectionBackground(new Color(0, 120, 255, 100));
         table.setSelectionForeground(Color.WHITE);
         table.setGridColor(new Color(255, 255, 255, 30));

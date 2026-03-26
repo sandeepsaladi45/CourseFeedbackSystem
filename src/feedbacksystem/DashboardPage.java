@@ -10,9 +10,12 @@ import java.util.HashMap;
 
 public class DashboardPage extends JFrame {
 
-    private int studentSno;
+    private int studentSno = -1;
     private String studentName;
     private String studentEmail;
+    private String studentRegNo;
+    private boolean isLoggedIn = false;
+    private JPanel authLinksPanel;
 
     private CardLayout cardLayout;
     private JPanel contentPanel;
@@ -28,11 +31,7 @@ public class DashboardPage extends JFrame {
     private int currentExpectedSubjects = 5;
     private JScrollPane formScrollPane;
 
-    public DashboardPage(int sno, String name, String email) {
-        this.studentSno = sno;
-        this.studentName = name;
-        this.studentEmail = email;
-
+    public DashboardPage() {
         setTitle("Course Feedback System - Dashboard");
         setSize(1100, 700);
         setLocationRelativeTo(null);
@@ -41,6 +40,9 @@ public class DashboardPage extends JFrame {
         GradientPanel mainPanel = new GradientPanel();
         mainPanel.setLayout(new BorderLayout());
         add(mainPanel);
+
+        // Fixed Top Nav Bar
+        mainPanel.add(createTopNav(), BorderLayout.NORTH);
 
         rootCardLayout = new CardLayout();
         rootCardPanel = new JPanel(rootCardLayout);
@@ -94,63 +96,22 @@ public class DashboardPage extends JFrame {
         sidebar.setOpaque(false); // Essential! Let main background pass through
         sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(255, 255, 255, 30)));
 
-        // Profile Section
-        JPanel profilePanel = new JPanel();
-        profilePanel.setLayout(new BoxLayout(profilePanel, BoxLayout.Y_AXIS));
-        profilePanel.setOpaque(false);
-        profilePanel.setBorder(new EmptyBorder(50, 20, 40, 20));
-
-        JLabel avatar = new JLabel("\uD83D\uDC64", SwingConstants.CENTER); // User emoji
-        avatar.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 70));
-        avatar.setForeground(Color.WHITE);
-        avatar.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        JLabel nameLabel = new JLabel(studentName != null ? studentName : "Student", SwingConstants.CENTER);
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        nameLabel.setForeground(Color.WHITE);
-        nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        nameLabel.setBorder(new EmptyBorder(15, 0, 5, 0));
-
-        JLabel emailLabel = new JLabel(studentEmail != null ? studentEmail : "student@gmail.com",
-                SwingConstants.CENTER);
-        emailLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        emailLabel.setForeground(new Color(180, 200, 240));
-        emailLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        profilePanel.add(avatar);
-        profilePanel.add(nameLabel);
-        profilePanel.add(emailLabel);
-        sidebar.add(profilePanel, BorderLayout.NORTH);
+        // Profile Section removed per request
 
         // Menu Buttons
         JPanel menuPanel = new JPanel(new GridLayout(5, 1, 0, 15));
         menuPanel.setOpaque(false);
         menuPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        // Removed Emojis from text to prevent missing font rendering boxes
-        // Change dashboard button behavior to return to landing page
-        JButton homeBtn = createMenuButton("Home / Landing", null);
-        homeBtn.addActionListener(e -> {
-            rootCardLayout.show(rootCardPanel, "LANDING");
-        });
-        menuPanel.add(homeBtn);
-        menuPanel.add(createMenuButton("Submit Feedback", "SUBMIT"));
+        // Menu Buttons
+        JButton submitBtn = createMenuButton("Submit Feedback", "SUBMIT");
+        menuPanel.add(submitBtn);
         menuPanel.add(createMenuButton("My Feedback", "LIST"));
-
-        // Logout
-        JButton logoutBtn = createMenuButton("Logout", null);
-        logoutBtn.setForeground(new Color(255, 100, 100)); // Red tint for logout
-        logoutBtn.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Logged out successfully!");
-            new LoginPage().setVisible(true);
-            dispose();
-        });
-        menuPanel.add(logoutBtn);
 
         sidebar.add(menuPanel, BorderLayout.CENTER);
 
         // Automatically set highlighting active on the first button after UI renders
-        SwingUtilities.invokeLater(() -> homeBtn.doClick());
+        SwingUtilities.invokeLater(() -> submitBtn.doClick());
 
         return sidebar;
     }
@@ -199,11 +160,74 @@ public class DashboardPage extends JFrame {
         return btn;
     }
 
-    private JPanel createLandingPage() {
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setOpaque(false);
+    public void loginSuccess(int sno, String name, String email, String regNo) {
+        this.studentSno = sno;
+        this.studentName = name;
+        this.studentEmail = email;
+        this.studentRegNo = regNo;
+        this.isLoggedIn = true;
+        updateAuthUI();
+    }
 
-        // --- TOP NAV BAR matching the image ---
+    private void updateAuthUI() {
+        if (authLinksPanel == null) return;
+        authLinksPanel.removeAll();
+        if (isLoggedIn) {
+            JLabel regLbl = new JLabel("Reg. No: " + studentRegNo + " ▼");
+            regLbl.setForeground(Color.WHITE);
+            regLbl.setFont(new Font("Segoe UI", Font.BOLD, 15));
+            regLbl.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            regLbl.addMouseListener(new MouseAdapter() {
+                public void mouseClicked(MouseEvent e) {
+                    JPopupMenu logoutMenu = new JPopupMenu();
+                    JMenuItem logoutItem = new JMenuItem("Logout");
+                    logoutItem.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+                    logoutItem.addActionListener(ev -> {
+                        int confirm = JOptionPane.showConfirmDialog(DashboardPage.this, "Are you sure you want to logout?", "Logout", JOptionPane.YES_NO_OPTION);
+                        if (confirm == JOptionPane.YES_OPTION) {
+                            isLoggedIn = false;
+                            studentSno = -1;
+                            studentName = null;
+                            studentEmail = null;
+                            studentRegNo = null;
+                            updateAuthUI();
+                            rootCardLayout.show(rootCardPanel, "LANDING");
+                        }
+                    });
+                    logoutMenu.add(logoutItem);
+                    logoutMenu.show(regLbl, 0, regLbl.getHeight());
+                }
+            });
+            authLinksPanel.add(regLbl);
+        } else {
+            JLabel loginLbl = new JLabel("Log in");
+            loginLbl.setForeground(Color.WHITE);
+            loginLbl.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            loginLbl.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            loginLbl.addMouseListener(new MouseAdapter() {
+                public void mouseClicked(MouseEvent e) {
+                    new LoginPage(DashboardPage.this, true).setVisible(true);
+                }
+            });
+            authLinksPanel.add(loginLbl);
+
+            JButton signupBtn = new JButton("Sign up");
+            signupBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            signupBtn.setForeground(Color.WHITE);
+            signupBtn.setBackground(new Color(255, 60, 90));
+            signupBtn.setBorder(new EmptyBorder(6, 20, 6, 20));
+            signupBtn.setFocusPainted(false);
+            signupBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            signupBtn.addActionListener(e -> {
+                new LoginPage(DashboardPage.this, false).setVisible(true);
+            });
+            authLinksPanel.add(signupBtn);
+        }
+        authLinksPanel.revalidate();
+        authLinksPanel.repaint();
+    }
+
+    private JPanel createTopNav() {
         JPanel topNav = new JPanel(new BorderLayout());
         topNav.setOpaque(false);
         topNav.setBorder(new EmptyBorder(30, 50, 0, 50));
@@ -215,35 +239,51 @@ public class DashboardPage extends JFrame {
 
         JPanel navLinks = new JPanel(new FlowLayout(FlowLayout.CENTER, 40, 0));
         navLinks.setOpaque(false);
-        String[] links = {"Home", "About", "Blog", "Contact us"};
+        String[] links = {"Home", "About", "Notifications", "Contact us"};
         for (String link : links) {
             JLabel lbl = new JLabel(link);
-            lbl.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-            lbl.setForeground(new Color(200, 220, 255));
+            lbl.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+            lbl.setForeground(new Color(220, 230, 255));
             lbl.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            
+            lbl.addMouseListener(new MouseAdapter() {
+                public void mouseEntered(MouseEvent e) { lbl.setForeground(Color.WHITE); }
+                public void mouseExited(MouseEvent e) { lbl.setForeground(new Color(220, 230, 255)); }
+                public void mouseClicked(MouseEvent e) {
+                    if (link.equals("Home")) {
+                        rootCardLayout.show(rootCardPanel, "LANDING");
+                    } else if (link.equals("Notifications")) {
+                        JPopupMenu popup = new JPopupMenu();
+                        popup.setBackground(new Color(15, 30, 50));
+                        popup.setBorder(BorderFactory.createLineBorder(new Color(255, 255, 255, 40), 1));
+                        
+                        JPanel notifPanel = new JPanel(new BorderLayout());
+                        notifPanel.setOpaque(false);
+                        notifPanel.setPreferredSize(new Dimension(250, 100));
+                        
+                        JLabel txt = new JLabel("Empty Notifications", SwingConstants.CENTER);
+                        txt.setForeground(Color.WHITE);
+                        txt.setFont(new Font("Segoe UI", Font.ITALIC, 14));
+                        
+                        notifPanel.add(txt, BorderLayout.CENTER);
+                        popup.add(notifPanel);
+                        popup.show(lbl, 0, lbl.getHeight() + 10);
+                    }
+                }
+            });
             navLinks.add(lbl);
         }
         topNav.add(navLinks, BorderLayout.CENTER);
 
-        JPanel authLinks = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 0));
-        authLinks.setOpaque(false);
-        JLabel loginLbl = new JLabel("Log in");
-        loginLbl.setForeground(Color.WHITE);
-        loginLbl.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        authLinks.add(loginLbl);
+        authLinksPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 0));
+        authLinksPanel.setOpaque(false);
+        updateAuthUI();
 
-        JButton signupBtn = new JButton("Sign up");
-        signupBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        signupBtn.setForeground(Color.WHITE);
-        signupBtn.setBackground(new Color(255, 60, 90)); // Soft red/pink
-        signupBtn.setBorder(new EmptyBorder(6, 20, 6, 20));
-        signupBtn.setFocusPainted(false);
-        authLinks.add(signupBtn);
+        topNav.add(authLinksPanel, BorderLayout.EAST);
+        return topNav;
+    }
 
-        topNav.add(authLinks, BorderLayout.EAST);
-
-        wrapper.add(topNav, BorderLayout.NORTH);
-
+    private JPanel createLandingPage() {
         // --- MAIN CONTENT (LEFT ALIGNED) ---
         JPanel panel = new JPanel(null); // Absolute positioning for exact image matching
         panel.setOpaque(false);
@@ -274,12 +314,15 @@ public class DashboardPage extends JFrame {
         seeMoreBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         seeMoreBtn.setBorder(BorderFactory.createLineBorder(new Color(255, 255, 255, 80), 1, true));
         seeMoreBtn.addActionListener(e -> {
+            if (!isLoggedIn) {
+                JOptionPane.showMessageDialog(this, "Please log in first to access the Dashboard!");
+                new LoginPage(DashboardPage.this, true).setVisible(true);
+                return;
+            }
             rootCardLayout.show(rootCardPanel, "APP_DASHBOARD");
             cardLayout.show(contentPanel, "SUBMIT"); // Open submit feedback by default
         });
         panel.add(seeMoreBtn);
-
-        wrapper.add(panel, BorderLayout.CENTER);
 
         // Start Welcome Animation
         Timer timer = new Timer(150, null);
@@ -322,7 +365,7 @@ public class DashboardPage extends JFrame {
         seeMoreBtn.setVisible(false);
         timer.start();
 
-        return wrapper;
+        return panel;
     }
     
     private JLabel createLinkButton(String text, String urlString) {
@@ -357,8 +400,7 @@ public class DashboardPage extends JFrame {
         wrapper.setBorder(new EmptyBorder(30, 60, 30, 60));
 
         JPanel formPanel = new JPanel(null);
-        formPanel.setBackground(new Color(20, 30, 60, 180));
-        formPanel.setBorder(BorderFactory.createLineBorder(new Color(255, 255, 255, 40), 1));
+        formPanel.setOpaque(false);
 
         JLabel title = new JLabel("Semester Feedback Form");
         title.setFont(new Font("Segoe UI", Font.BOLD, 28));
